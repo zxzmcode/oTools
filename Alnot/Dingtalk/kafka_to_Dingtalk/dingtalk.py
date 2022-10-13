@@ -2,16 +2,14 @@
 import json
 import requests
 import os
-
-# from logging42 import logger
+import time
+import log21
 from kafka import KafkaConsumer
 
-access_token = os.environ.get("ACCESS_TOKEN", "e91109022bbfa6d483a130c24d3b350e9d1766a511a592b54213f5b671e9bc41")
-kafka_host = os.environ.get("KAFKA_HOST",'192.168.252.60')
-kafka_port = os.environ.get("KAFKA_PORT", 9200)
-kafka_topic = os.environ.get("KAFKA_TOPIC","esalert")
-
-kafka = '{}:{}'.format(kafka_host, kafka_port)
+access_token = os.environ.get("ACCESS_TOKEN")
+kafka_host = os.environ.get("KAFKA_HOST")
+kafka_port = os.environ.get("KAFKA_PORT", "9092")
+kafka_topic = os.environ.get("KAFKA_TOPIC")
 
 def dingtalk_robot(text):
     url = "https://oapi.dingtalk.com/robot/send?access_token=" + access_token
@@ -33,30 +31,33 @@ def dingtalk_robot(text):
 
 
 def test_to_json(message):
-    data = json.load(message)
+    data = json.loads(message, strict=False)
     content = data.get('text').get('content')
     return content
 
 
 def kafka_to_dingtalk():
+    if kafka_port == '':
+        bootstrap_server = '{}:{}'.format(kafka_host,'9092')
+    else:
+        bootstrap_server = '{}:{}'.format(kafka_host, kafka_port)
     consumer = KafkaConsumer(
         kafka_topic,
-        bootstrap_servers=['192.168.252.60:9092'], 
-        auto_offset_reset='earliest', 
+        bootstrap_servers=bootstrap_server,
+        auto_offset_reset='earliest',
         api_version=(0, 10, 2)
     )
     for msg in consumer:
-        dingtalk_massage=test_to_json(msg.value.decode())
+        dingtalk_massage = test_to_json(msg.value.decode())
+        time.sleep(4)
         dingtalk_robot(dingtalk_massage)
 
-kafka_to_dingtalk()
 
-
-# if __name__ == '__main__':
-#     kafka_to_dingtalk()
-
-
-# with open('E:\log.json', encoding='utf-8') as message:
-#     data = json.load(message)
-#     content = data.get('text').get('content')
-#     dingtalk_robot(content)
+if __name__ == '__main__':
+    if access_token == '':
+        log21.print(log21.get_color('#FF0000') + '未提供钉钉机器人ACCESS_TOKEN' )
+    if kafka_host == '':
+        log21.print(log21.get_color('#FF0000') + '未配置Kafka的环境变量KAFKA_HOST' )
+    if kafka_host == '':
+        log21.print(log21.get_color('#FF0000') + '未配置Kafka的环境变量KAFKA_TOPIC' )
+    kafka_to_dingtalk()
