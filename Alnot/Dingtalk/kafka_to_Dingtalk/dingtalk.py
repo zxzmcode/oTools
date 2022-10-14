@@ -25,15 +25,13 @@ def dingtalk_robot(text):
     }
 
     json_data = json.dumps(data_dict)
-
     response = requests.post(url, data=json_data, headers=headers)
     print(response.text)  # {"errcode":0,"errmsg":"ok"}
 
 
 def test_to_json(message):
     data = json.loads(message, strict=False)
-    content = data.get('text').get('content')
-    return content
+    return data.get('text').get('content')
 
 
 def kafka_to_dingtalk():
@@ -44,9 +42,10 @@ def kafka_to_dingtalk():
     consumer = KafkaConsumer(
         kafka_topic,
         bootstrap_servers=bootstrap_server,
-        auto_offset_reset='earliest',
+        auto_offset_reset='latest',
         api_version=(0, 10, 2)
     )
+    log21.print(type(consumer))
     for msg in consumer:
         dingtalk_massage = test_to_json(msg.value.decode())
         time.sleep(4)
